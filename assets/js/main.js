@@ -9,84 +9,64 @@ document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Create the skills constellation section and placeholder
-  const footer = document.querySelector('footer');
-  if (footer) {
-    const section = document.createElement('section');
-    section.id = 'skills-constellation';
-    section.className = 'section';
-    const container = document.createElement('div');
-    container.className = 'container';
-    const h2 = document.createElement('h2');
-    h2.textContent = 'Interactive Skills Constellation';
-    const div3d = document.createElement('div');
-    div3d.id = 'skills3d';
-    container.appendChild(h2);
-    container.appendChild(div3d);
-    section.appendChild(container);
-    footer.parentNode.insertBefore(section, footer);
-  }
+  // Create a full-page background container for the 3D animation
+  const bgDiv = document.createElement('div');
+  bgDiv.id = 'bg-3d';
+  document.body.prepend(bgDiv);
 
-  // Helper to dynamically load Three.js
-  function loadScript(src) {
+  // Helper to load external scripts
+  const loadScript = (src) => {
     return new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = src;
-      s.onload = resolve;
-      s.onerror = reject;
-      document.head.appendChild(s);
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load script: ' + src));
+      document.head.appendChild(script);
     });
-  }
+  };
 
-  loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r157/three.min.js').then(() => {
-    const div3d = document.getElementById('skills3d');
-    if (!div3d) return;
-    const width = div3d.clientWidth || div3d.offsetWidth || (div3d.parentElement && div3d.parentElement.clientWidth) || window.innerWidth;
-    const height = 400;
-
+  // Load Three.js and initialize the background animation
+  loadScript('https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js').then(() => {
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setSize(width, height);
-    div3d.appendChild(renderer.domElement);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    bgDiv.appendChild(renderer.domElement);
 
-    const skills = ['Machine Learning','Deep Learning','NLP','Computer Vision','Generative AI','RAG Pipelines','Cloud ML','Python'];
+    // Create a group of spheres using a Fibonacci sphere algorithm
     const group = new THREE.Group();
-
-    skills.forEach((skill, i) => {
-      const geometry = new THREE.SphereGeometry(0.2, 16, 16);
+    const count = 40;
+    const radius = 80;
+    const phi = (1 + Math.sqrt(5)) / 2;
+    for (let i = 0; i < count; i++) {
+      const geometry = new THREE.SphereGeometry(1.2, 16, 16);
       const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-      const mesh = new THREE.Mesh(geometry, material);
-      const phi = Math.acos(1 - 2 * (i + 0.5) / skills.length);
-      const theta = Math.PI * (1 + Math.sqrt(5)) * (i + 0.5);
-      const radius = 3;
-      mesh.position.set(
-        radius * Math.cos(theta) * Math.sin(phi),
-        radius * Math.sin(theta) * Math.sin(phi),
-        radius * Math.cos(phi)
-      );
-      group.add(mesh);
-    });
-
-    scene.add(group);
-    camera.position.z = 8;
-
-    function animate() {
-      requestAnimationFrame(animate);
-      group.rotation.y += 0.003;
-      group.rotation.x += 0.0015;
-      renderer.render(scene, camera);
+      const sphere = new THREE.Mesh(geometry, material);
+      const y = 1 - (i / (count - 1)) * 2;
+      const r = Math.sqrt(1 - y * y);
+      const theta = 2 * Math.PI * i / phi;
+      sphere.position.set(Math.cos(theta) * r * radius, y * radius, Math.sin(theta) * r * radius);
+      group.add(sphere);
     }
+    scene.add(group);
+    camera.position.z = 200;
 
+    const animate = () => {
+      requestAnimationFrame(animate);
+      group.rotation.y += 0.0015;
+      group.rotation.x += 0.001;
+      renderer.render(scene, camera);
+    };
     animate();
 
     window.addEventListener('resize', () => {
-      const newWidth = div3d.clientWidth || div3d.offsetWidth || (div3d.parentElement && div3d.parentElement.clientWidth) || window.innerWidth;
-      renderer.setSize(newWidth, height);
-      camera.aspect = newWidth / height;
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      renderer.setSize(width, height);
+      camera.aspect = width / height;
       camera.updateProjectionMatrix();
     });
-  }).catch((err) => {
-    console.error('Failed to load Three.js', err);
+  }).catch((error) => {
+    console.error(error);
   });
 });
