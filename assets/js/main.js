@@ -9,19 +9,9 @@ document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  function loadScript(src) {
-    return new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = src;
-      s.onload = resolve;
-      s.onerror = reject;
-      document.head.appendChild(s);
-    });
-  }
-
-  loadScript('https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js').then(() => {
-    const footer = document.querySelector('footer');
-    if (!footer) return;
+  // Create the skills constellation section and placeholder
+  const footer = document.querySelector('footer');
+  if (footer) {
     const section = document.createElement('section');
     section.id = 'skills-constellation';
     section.className = 'section';
@@ -35,9 +25,25 @@ document.addEventListener('DOMContentLoaded', () => {
     container.appendChild(div3d);
     section.appendChild(container);
     footer.parentNode.insertBefore(section, footer);
+  }
 
-    const width = div3d.clientWidth;
+  // Helper to dynamically load Three.js
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r157/three.min.js').then(() => {
+    const div3d = document.getElementById('skills3d');
+    if (!div3d) return;
+    const width = div3d.clientWidth || div3d.offsetWidth || (div3d.parentElement && div3d.parentElement.clientWidth) || window.innerWidth;
     const height = 400;
+
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
@@ -46,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const skills = ['Machine Learning','Deep Learning','NLP','Computer Vision','Generative AI','RAG Pipelines','Cloud ML','Python'];
     const group = new THREE.Group();
+
     skills.forEach((skill, i) => {
       const geometry = new THREE.SphereGeometry(0.2, 16, 16);
       const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
@@ -60,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
       );
       group.add(mesh);
     });
+
     scene.add(group);
     camera.position.z = 8;
 
@@ -69,10 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
       group.rotation.x += 0.0015;
       renderer.render(scene, camera);
     }
+
     animate();
 
     window.addEventListener('resize', () => {
-      const newWidth = div3d.clientWidth;
+      const newWidth = div3d.clientWidth || div3d.offsetWidth || (div3d.parentElement && div3d.parentElement.clientWidth) || window.innerWidth;
       renderer.setSize(newWidth, height);
       camera.aspect = newWidth / height;
       camera.updateProjectionMatrix();
